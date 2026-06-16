@@ -1,0 +1,53 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Bias {
+  LEFT
+  CENTER
+  RIGHT
+}
+model User {
+  id         String          @id @default(cuid())
+  email      String          @unique
+  name       String?
+  image      String?
+  createdAt  DateTime        @default(now())
+  preference UserPreference?
+}
+model UserPreference {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preferredBiases Bias[]   @default([LEFT, CENTER, RIGHT])
+  defaultSort     String   @default("newest")
+}
+model Source {
+  id          String    @id @default(cuid())
+  name        String
+  rssUrl      String    @unique
+  homepageUrl String
+  bias        Bias
+  articles    Article[]
+}
+model Article {
+  id          String   @id @default(cuid())
+  title       String
+  url         String   @unique
+  summary     String?
+  publishedAt DateTime
+  sourceId    String
+  source      Source   @relation(fields: [sourceId], references: [id])
+  createdAt   DateTime @default(now())
+  @@index([publishedAt(sort: Desc)])
+}
