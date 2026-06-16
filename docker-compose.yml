@@ -1,0 +1,30 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - .:/workspace
+    command: sleep infinity
+    depends_on:
+      - db
+    networks:
+      - newsproj
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: newsproj
+      POSTGRES_PASSWORD: newsproj
+      POSTGRES_DB: newsproj
+    volumes:
+      - newsproj_pgdata:/var/lib/postgresql/data
+    networks:
+      - newsproj
+
+volumes:
+  newsproj_pgdata:
+
+networks:
+  newsproj:

@@ -1,0 +1,17 @@
+{
+    "name": "NewsProj Dev",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "dev",
+    "workspaceFolder": "/workspace",
+    "forwardPorts": [3000, 5555],
+    "postCreateCommand": "npm install || true",
+    "customizations": {
+      "vscode": {
+        "extensions": [
+          "dbaeumer.vscode-eslint",
+          "esbenp.prettier-vscode",
+          "Prisma.prisma"
+        ]
+      }
+    }
+  }
