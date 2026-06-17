@@ -1,6 +1,24 @@
 {
+  "name": "newsproj",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix web",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts",
+    "ingest": "tsx scripts/ingest.ts"
+  },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "pg": "^8.21.0",
     "prisma": "^7.8.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0",
+    "dotenv": "^16",
+    "tsx": "^4"
   }
 }
