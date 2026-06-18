@@ -1,5 +1,6 @@
 import Parser from "rss-parser";
 import { prisma } from "../lib/db";
+import { classifyTopic } from "./classify-topic";
 
 const parser = new Parser();
 
@@ -13,15 +14,19 @@ export async function ingestAllSources() {
       const feed = await parser.parseURL(source.rssUrl);
       for (const item of feed.items ?? []) {
         if (!item.link || !item.title) continue;
+        const summary =
+          item.contentSnippet ?? item.content?.slice(0, 500) ?? null;
+        const topic = classifyTopic(item.title, summary);
         await prisma.article.upsert({
           where: { url: item.link },
-          update: {},
+          update: { topic },
           create: {
             title: item.title,
             url: item.link,
-            summary: item.contentSnippet ?? item.content?.slice(0, 500) ?? null,
+            summary,
             publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
             sourceId: source.id,
+            topic,
           },
         });
         articlesUpserted++;

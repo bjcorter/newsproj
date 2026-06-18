@@ -8,7 +8,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
-    "ingest": "tsx scripts/ingest.ts"
+    "ingest": "tsx scripts/ingest.ts",
+    "retag": "tsx scripts/retag.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

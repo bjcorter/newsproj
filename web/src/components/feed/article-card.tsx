@@ -6,9 +6,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { Article, Bias, Source } from "../../../../generated/prisma/client";
-
-type ArticleWithSource = Article & { source: Source };
+import type { Bias } from "../../../../generated/prisma/client";
+import type { ArticleWithSource } from "@/types/article";
+import { TOPIC_LABELS } from "@/lib/topics";
 
 const biasLabel: Record<Bias, string> = {
   LEFT: "Left",
@@ -48,9 +48,12 @@ export function ArticleCard({ article }: { article: ArticleWithSource }) {
               {article.title}
             </a>
           </CardTitle>
-          <Badge className={biasClass[article.source.bias]}>
-            {biasLabel[article.source.bias]}
-          </Badge>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <Badge variant="outline">{TOPIC_LABELS[article.topic]}</Badge>
+            <Badge className={biasClass[article.source.bias]}>
+              {biasLabel[article.source.bias]}
+            </Badge>
+          </div>
         </div>
         <CardDescription>
           {article.source.name} · {formatRelativeTime(article.publishedAt)}

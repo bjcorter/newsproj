@@ -17,6 +17,22 @@ enum Bias {
   CENTER
   RIGHT
 }
+enum Topic {
+  POLITICS
+  ECONOMY
+  TECH
+  INTERNET
+  SPORTS
+  WORLD
+  HEALTH
+  SCIENCE
+  CLIMATE
+  CULTURE
+  CRIME
+  EDUCATION
+  DEFENSE
+  MISCELLANEOUS
+}
 model User {
   id         String          @id @default(cuid())
   email      String          @unique
@@ -48,6 +64,8 @@ model Article {
   publishedAt DateTime
   sourceId    String
   source      Source   @relation(fields: [sourceId], references: [id])
+  topic       Topic    @default(MISCELLANEOUS)
   createdAt   DateTime @default(now())
   @@index([publishedAt(sort: Desc)])
+  @@index([topic])
 }
