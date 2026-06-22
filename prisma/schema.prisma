@@ -62,6 +62,7 @@ model Article {
   url         String   @unique
   summary     String?
   publishedAt DateTime
+  imageUrl    String?
   sourceId    String
   source      Source   @relation(fields: [sourceId], references: [id])
   topic       Topic    @default(MISCELLANEOUS)

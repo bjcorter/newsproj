@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ArticleImage } from "@/components/feed/article-image";
 import type { Bias } from "../../../../generated/prisma/client";
 import type { ArticleWithSource } from "@/types/article";
 import { TOPIC_LABELS } from "@/lib/topics";
@@ -36,6 +37,9 @@ function formatRelativeTime(date: Date) {
 export function ArticleCard({ article }: { article: ArticleWithSource }) {
   return (
     <Card>
+      {article.imageUrl ? (
+        <ArticleImage src={article.imageUrl} alt={article.title} />
+      ) : null}
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <CardTitle className="leading-snug">
