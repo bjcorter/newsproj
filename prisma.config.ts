@@ -9,6 +9,8 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Prisma CLI (migrate/studio) prefers a direct, non-pooled connection.
+    // Falls back to DATABASE_URL for local dev, where only one URL exists.
+    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
   },
 });
