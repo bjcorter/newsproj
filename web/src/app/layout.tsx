@@ -1,14 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Playfair_Display, Source_Serif_4, UnifrakturCook } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Display serif for headlines and filter labels.
+const display = Playfair_Display({
+  variable: "--font-display",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// Readable serif for body copy and UI text.
+const body = Source_Serif_4({
+  variable: "--font-body",
+  subsets: ["latin"],
+});
+
+// Blackletter, used only for the masthead nameplate.
+const blackletter = UnifrakturCook({
+  variable: "--font-blackletter",
+  weight: "700",
   subsets: ["latin"],
 });
 
@@ -25,7 +34,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${display.variable} ${body.variable} ${blackletter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

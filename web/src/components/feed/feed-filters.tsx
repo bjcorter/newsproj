@@ -82,21 +82,23 @@ export function FeedFilters() {
     excluded.size > 0;
 
   return (
-    <div className="mb-6 flex flex-col gap-4 rounded-xl border bg-white p-4">
+    <div className="mb-6 flex flex-col gap-4 border-y-2 border-foreground py-4">
       <form onSubmit={onSearchSubmit} className="flex gap-2">
         <Input
           key={queryValue}
           name="q"
           type="search"
-          placeholder="Search articles by keyword..."
+          placeholder="Search the archives by keyword…"
           defaultValue={queryValue}
         />
         <Button type="submit">Search</Button>
       </form>
 
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Topic</span>
+          <span className="text-[0.7rem] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            Topic
+          </span>
           <Select value={currentTopic} onValueChange={onTopicChange}>
             <SelectTrigger className="w-40">
               <SelectValue />
@@ -113,7 +115,9 @@ export function FeedFilters() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Sort</span>
+          <span className="text-[0.7rem] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            Sort
+          </span>
           <Select value={currentSort} onValueChange={onSortChange}>
             <SelectTrigger className="w-36">
               <SelectValue />
@@ -129,7 +133,9 @@ export function FeedFilters() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Show</span>
+          <span className="text-[0.7rem] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            Show
+          </span>
           {BIAS_VALUES.map((bias) => {
             const shown = !excluded.has(bias);
             return (
