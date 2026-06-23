@@ -4,6 +4,7 @@ import { parseArticleFilters, recordToSearchParams } from "@/lib/search-params";
 import { Header } from "@/components/layout/header";
 import { FeedFilters } from "@/components/feed/feed-filters";
 import { ArticleList } from "@/components/feed/article-list";
+import { RefreshButton } from "@/components/feed/refresh-button";
 
 export default async function Home({
   searchParams,
@@ -22,10 +23,13 @@ export default async function Home({
   return (
     <div className="min-h-full bg-background">
       <Header />
-      <main className="mx-auto max-w-5xl px-4 py-6">
+      <main className="mx-auto max-w-5xl px-4 pb-6">
         <Suspense fallback={null}>
           <FeedFilters />
         </Suspense>
+        <div className="mb-6 flex justify-center">
+          <RefreshButton />
+        </div>
         <ArticleList articles={articles} hasFilters={hasFilters} />
       </main>
     </div>

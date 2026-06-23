@@ -82,7 +82,7 @@ export function FeedFilters() {
     excluded.size > 0;
 
   return (
-    <div className="mb-6 flex flex-col gap-4 border-y-2 border-foreground py-4">
+    <div className="mb-6 flex flex-col gap-4 border-b-2 border-foreground py-4">
       <form onSubmit={onSearchSubmit} className="flex gap-2">
         <Input
           key={queryValue}
