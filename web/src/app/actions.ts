@@ -18,6 +18,7 @@ type RefreshResult =
       sourcesProcessed: number;
       sourcesSucceeded: number;
       articlesUpserted: number;
+      aiClassified: number;
     }
   | { status: "cooldown"; retryAfterMs: number };
 
@@ -44,6 +45,7 @@ export async function refreshArticles(): Promise<RefreshResult> {
       sourcesProcessed: result.sourcesProcessed,
       sourcesSucceeded: result.sourcesSucceeded,
       articlesUpserted: result.articlesUpserted,
+      aiClassified: result.aiClassified,
     };
   } catch (err) {
     // Let the user retry promptly if the run failed.

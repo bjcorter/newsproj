@@ -1,5 +1,6 @@
 import type { Bias } from "../../../generated/prisma/client";
 import {
+  ARTICLE_PAGE_SIZE,
   isArticleSort,
   isBias,
   type ArticleFilters,
@@ -35,7 +36,31 @@ export function parseArticleFilters(params: URLSearchParams): ArticleFilters {
   const excludeBiases = Array.from(new Set(rawBiases)).filter(isBias) as Bias[];
   if (excludeBiases.length) filters.excludeBiases = excludeBiases;
 
+  const pageRaw = params.get("page");
+  if (pageRaw) {
+    const page = Number.parseInt(pageRaw, 10);
+    if (page > 0) filters.page = page;
+  }
+
+  const limitRaw = params.get("limit");
+  if (limitRaw) {
+    const limit = Number.parseInt(limitRaw, 10);
+    if (limit > 0 && limit <= 100) filters.limit = limit;
+  }
+
   return filters;
+}
+
+/** Search params for the next infinite-scroll fetch (preserves filters). */
+export function buildArticlesApiParams(
+  searchParams: URLSearchParams,
+  page: number
+): URLSearchParams {
+  const filters = parseArticleFilters(searchParams);
+  const params = buildArticleSearchParams(filters);
+  params.set("page", String(page));
+  params.set("limit", String(ARTICLE_PAGE_SIZE));
+  return params;
 }
 
 /**

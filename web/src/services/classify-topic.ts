@@ -120,38 +120,56 @@ const COMPILED_RULES: { topic: Exclude<Topic, "MISCELLANEOUS">; patterns: RegExp
     ),
   }));
 
+export type TopicScore = { topic: Exclude<Topic, "MISCELLANEOUS">; score: number };
+
 /**
- * Classify an article into exactly one Topic based on keyword matches in its
- * title + summary.
- *
- * Algorithm:
- *   1. Score each of the 13 content topics by counting how many of its
- *      keywords appear in the text.
- *   2. Return the highest-scoring topic.
- *   3. On a tie, the topic earliest in TOPIC_PRIORITY wins.
- *   4. If nothing matches (score 0 everywhere), return MISCELLANEOUS.
+ * Score every content topic by how many of its keywords appear in the article
+ * text, returned highest-first. COMPILED_RULES is in priority order and the
+ * sort is stable, so ties keep their priority order. MISCELLANEOUS is never
+ * scored here (it is the absence of any match).
  */
-export function classifyTopic(
+export function scoreTopics(
   title: string,
   summary?: string | null
-): Topic {
+): TopicScore[] {
   const text = `${title} ${summary ?? ""}`.toLowerCase();
 
-  let bestTopic: Topic = "MISCELLANEOUS";
-  let bestScore = 0;
-
-  // COMPILED_RULES is already in priority order, so the first topic to reach a
-  // given score keeps it (later equal-scoring topics use `>` and don't replace).
-  for (const { topic, patterns } of COMPILED_RULES) {
+  const scores: TopicScore[] = COMPILED_RULES.map(({ topic, patterns }) => {
     let score = 0;
     for (const pattern of patterns) {
       if (pattern.test(text)) score++;
     }
-    if (score > bestScore) {
-      bestScore = score;
-      bestTopic = topic;
-    }
-  }
+    return { topic, score };
+  });
 
-  return bestTopic;
+  return scores.sort((a, b) => b.score - a.score);
+}
+
+/**
+ * Pick the single best topic from a ranked score list. Returns MISCELLANEOUS
+ * when nothing matched.
+ */
+export function topTopic(scores: TopicScore[]): Topic {
+  const best = scores[0];
+  return best && best.score > 0 ? best.topic : "MISCELLANEOUS";
+}
+
+/**
+ * Whether the keyword scorer is unsure enough that an LLM should weigh in:
+ * either almost nothing matched (best < 2, which includes the MISCELLANEOUS
+ * case) or the top two topics are tied.
+ */
+export function isLowConfidence(scores: TopicScore[]): boolean {
+  const best = scores[0]?.score ?? 0;
+  const second = scores[1]?.score ?? 0;
+  return best < 2 || best - second < 1;
+}
+
+/**
+ * Classify an article into exactly one Topic based on keyword matches in its
+ * title + summary. Highest score wins; ties break by TOPIC_PRIORITY; no match
+ * yields MISCELLANEOUS.
+ */
+export function classifyTopic(title: string, summary?: string | null): Topic {
+  return topTopic(scoreTopics(title, summary));
 }

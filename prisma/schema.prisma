@@ -66,7 +66,9 @@ model Article {
   sourceId    String
   source      Source   @relation(fields: [sourceId], references: [id])
   topic       Topic    @default(MISCELLANEOUS)
+  isTopStory  Boolean  @default(false)
   createdAt   DateTime @default(now())
   @@index([publishedAt(sort: Desc)])
   @@index([topic])
+  @@index([isTopStory])
 }

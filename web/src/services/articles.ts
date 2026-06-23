@@ -16,7 +16,15 @@ const sortMap: Record<ArticleSort, Prisma.ArticleOrderByWithRelationInput> = {
 export async function getArticles(
   filters: ArticleFilters = {}
 ): Promise<ArticleWithSource[]> {
-  const { q, topic, excludeBiases, sort = "newest", limit = 20 } = filters;
+  const {
+    q,
+    topic,
+    excludeBiases,
+    sort = "newest",
+    limit = 20,
+    page = 1,
+  } = filters;
+  const skip = (page - 1) * limit;
 
   const where: Prisma.ArticleWhereInput = {
     ...(topic ? { topic } : {}),
@@ -33,10 +41,22 @@ export async function getArticles(
       : {}),
   };
 
+  // On the unfiltered, default-sorted home view, pin the flagged "story of the
+  // day" to the top so it becomes the featured lead. Any filter or non-newest
+  // sort leaves ordering untouched. If nothing is flagged, this is identical to
+  // plain newest-first.
+  const isDefaultView =
+    !q && !topic && !(excludeBiases && excludeBiases.length) && sort === "newest";
+
+  const orderBy: Prisma.ArticleOrderByWithRelationInput[] = isDefaultView
+    ? [{ isTopStory: "desc" }, { publishedAt: "desc" }]
+    : [sortMap[sort]];
+
   return prisma.article.findMany({
     where,
     include: { source: true },
-    orderBy: sortMap[sort],
+    orderBy,
+    skip,
     take: limit,
   });
 }

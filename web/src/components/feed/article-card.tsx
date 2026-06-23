@@ -1,4 +1,5 @@
 import { ArticleImage } from "@/components/feed/article-image";
+import { RelativeTime } from "@/components/feed/relative-time";
 import type { Bias } from "../../../../generated/prisma/client";
 import type { ArticleWithSource } from "@/types/article";
 import { TOPIC_LABELS } from "@/lib/topics";
@@ -16,17 +17,6 @@ const biasDot: Record<Bias, string> = {
   CENTER: "bg-[#7a736a]",
   RIGHT: "bg-[#7a3030]",
 };
-
-function formatRelativeTime(date: Date) {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
 
 function BiasCue({ bias }: { bias: Bias }) {
   return (
@@ -52,17 +42,18 @@ export function ArticleCard({
     <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground">
       <span>{article.source.name}</span>
       <span aria-hidden>&middot;</span>
-      <span>{formatRelativeTime(article.publishedAt)}</span>
+      <RelativeTime date={article.publishedAt} />
       <span aria-hidden>&middot;</span>
       <BiasCue bias={article.source.bias} />
     </p>
   );
 
   if (featured) {
+    const featuredKicker = article.isTopStory ? "Top Story!" : kicker;
     return (
       <article className="border-b-2 border-foreground pb-6">
         <p className="text-center text-[0.7rem] font-bold uppercase tracking-[0.3em] text-muted-foreground">
-          {kicker}
+          {featuredKicker}
         </p>
         <h2 className="mx-auto mt-2 max-w-3xl text-center font-heading text-3xl font-bold leading-tight sm:text-5xl">
           <a

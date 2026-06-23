@@ -134,7 +134,7 @@ export function FeedFilters() {
 
         <div className="flex items-center gap-2">
           <span className="text-[0.7rem] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-            Show
+            Hide
           </span>
           {BIAS_VALUES.map((bias) => {
             const shown = !excluded.has(bias);

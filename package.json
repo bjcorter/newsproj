@@ -9,7 +9,8 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "ingest": "tsx scripts/ingest.ts",
-    "retag": "tsx scripts/retag.ts"
+    "retag": "tsx scripts/retag.ts",
+    "ai-backfill": "tsx scripts/ai-backfill.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

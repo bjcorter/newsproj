@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/header";
 import { FeedFilters } from "@/components/feed/feed-filters";
 import { ArticleList } from "@/components/feed/article-list";
 import { RefreshButton } from "@/components/feed/refresh-button";
+import { ARTICLE_PAGE_SIZE } from "@/types/article";
 
 export default async function Home({
   searchParams,
@@ -12,8 +13,14 @@ export default async function Home({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const resolved = await searchParams;
-  const filters = parseArticleFilters(recordToSearchParams(resolved));
-  const articles = await getArticles(filters);
+  const filterParams = recordToSearchParams(resolved);
+  const filters = parseArticleFilters(filterParams);
+  const batch = await getArticles({
+    ...filters,
+    limit: ARTICLE_PAGE_SIZE + 1,
+  });
+  const hasMore = batch.length > ARTICLE_PAGE_SIZE;
+  const articles = batch.slice(0, ARTICLE_PAGE_SIZE);
 
   const hasFilters =
     Boolean(filters.q) ||
@@ -30,7 +37,14 @@ export default async function Home({
         <div className="mb-6 flex justify-center">
           <RefreshButton />
         </div>
-        <ArticleList articles={articles} hasFilters={hasFilters} />
+        <Suspense fallback={null}>
+          <ArticleList
+            key={filterParams.toString()}
+            articles={articles}
+            hasMore={hasMore}
+            hasFilters={hasFilters}
+          />
+        </Suspense>
       </main>
     </div>
   );

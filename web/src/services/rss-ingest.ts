@@ -1,6 +1,8 @@
 import Parser from "rss-parser";
+import type { Topic } from "../../../generated/prisma/client";
 import { prisma } from "../lib/db";
-import { classifyTopic } from "./classify-topic";
+import { scoreTopics, topTopic, isLowConfidence } from "./classify-topic";
+import { aiClassifyTopics, aiPickTopStory } from "./ai-classify";
 
 // Image data lives in namespaced tags rss-parser ignores by default, so we map
 // the common ones (Media RSS) onto plain item properties.
@@ -69,11 +71,27 @@ function extractImage(item: FeedItem): string | null {
   return null;
 }
 
+type ParsedItem = {
+  url: string;
+  title: string;
+  summary: string | null;
+  imageUrl: string | null;
+  publishedAt: Date;
+  sourceId: string;
+  keywordTopic: Topic;
+  uncertain: boolean;
+};
+
+// How far back to look for "story of the day" candidates.
+const TOP_STORY_WINDOW_MS = 36 * 60 * 60 * 1000;
+const TOP_STORY_CANDIDATES = 40;
+
 export async function ingestAllSources() {
   const sources = await prisma.source.findMany();
-  let articlesUpserted = 0;
   const failures: { name: string; rssUrl: string; error: string }[] = [];
+  const parsed: ParsedItem[] = [];
 
+  // 1. Parse every feed and score each item with the keyword classifier.
   for (const source of sources) {
     try {
       const feed = await parser.parseURL(source.rssUrl);
@@ -81,22 +99,17 @@ export async function ingestAllSources() {
         if (!item.link || !item.title) continue;
         const summary =
           item.contentSnippet ?? item.content?.slice(0, 500) ?? null;
-        const topic = classifyTopic(item.title, summary);
-        const imageUrl = extractImage(item);
-        await prisma.article.upsert({
-          where: { url: item.link },
-          update: { topic, imageUrl },
-          create: {
-            title: item.title,
-            url: item.link,
-            summary,
-            publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
-            sourceId: source.id,
-            topic,
-            imageUrl,
-          },
+        const scores = scoreTopics(item.title, summary);
+        parsed.push({
+          url: item.link,
+          title: item.title,
+          summary,
+          imageUrl: extractImage(item),
+          publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
+          sourceId: source.id,
+          keywordTopic: topTopic(scores),
+          uncertain: isLowConfidence(scores),
         });
-        articlesUpserted++;
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -105,10 +118,92 @@ export async function ingestAllSources() {
     }
   }
 
+  // 2. Let the LLM resolve the items the keyword scorer was unsure about.
+  // Keyed by URL since rows aren't created yet. Fails soft (empty map).
+  const uncertain = parsed.filter((p) => p.uncertain);
+  const aiTopics = await aiClassifyTopics(
+    uncertain.map((p) => ({ id: p.url, title: p.title, summary: p.summary }))
+  );
+
+  // 3. Upsert everything with the final topic (URL-unique, so no duplicates).
+  let articlesUpserted = 0;
+  for (const p of parsed) {
+    const topic = aiTopics.get(p.url) ?? p.keywordTopic;
+    await prisma.article.upsert({
+      where: { url: p.url },
+      update: { topic, imageUrl: p.imageUrl },
+      create: {
+        title: p.title,
+        url: p.url,
+        summary: p.summary,
+        publishedAt: p.publishedAt,
+        sourceId: p.sourceId,
+        topic,
+        imageUrl: p.imageUrl,
+      },
+    });
+    articlesUpserted++;
+  }
+
+  // 4. Pick the "story of the day" from recent articles and flag it.
+  const topStoryId = await selectTopStory();
+
   return {
     sourcesProcessed: sources.length,
     sourcesSucceeded: sources.length - failures.length,
     articlesUpserted,
+    aiClassified: aiTopics.size,
+    topStoryId,
     failures,
   };
+}
+
+/**
+ * Choose and flag the daily top story. Returns the chosen article id, or null
+ * if AI is unavailable/declined (in which case the previous flag is left as-is).
+ */
+async function selectTopStory(): Promise<string | null> {
+  try {
+    const since = new Date(Date.now() - TOP_STORY_WINDOW_MS);
+    let pool = await prisma.article.findMany({
+      where: { publishedAt: { gte: since } },
+      orderBy: { publishedAt: "desc" },
+      take: TOP_STORY_CANDIDATES,
+      include: { source: true },
+    });
+    // Fall back to the newest articles if nothing is recent enough.
+    if (!pool.length) {
+      pool = await prisma.article.findMany({
+        orderBy: { publishedAt: "desc" },
+        take: TOP_STORY_CANDIDATES,
+        include: { source: true },
+      });
+    }
+    if (!pool.length) return null;
+
+    const chosen = await aiPickTopStory(
+      pool.map((a) => ({
+        id: a.id,
+        title: a.title,
+        summary: a.summary,
+        source: a.source.name,
+      }))
+    );
+    if (!chosen) return null;
+
+    await prisma.$transaction([
+      prisma.article.updateMany({
+        where: { isTopStory: true },
+        data: { isTopStory: false },
+      }),
+      prisma.article.update({
+        where: { id: chosen },
+        data: { isTopStory: true },
+      }),
+    ]);
+    return chosen;
+  } catch (err) {
+    console.error("Top story selection failed:", err);
+    return null;
+  }
 }

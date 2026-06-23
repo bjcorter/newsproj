@@ -1,14 +1,74 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ArticleCard } from "@/components/feed/article-card";
+import { buildArticlesApiParams } from "@/lib/search-params";
 import type { ArticleWithSource } from "@/types/article";
 
+function normalizeArticle(raw: ArticleWithSource): ArticleWithSource {
+  return {
+    ...raw,
+    publishedAt: new Date(raw.publishedAt),
+    createdAt: new Date(raw.createdAt),
+  };
+}
+
 export function ArticleList({
-  articles,
+  articles: initialArticles,
+  hasMore: initialHasMore,
   hasFilters = false,
 }: {
   articles: ArticleWithSource[];
+  hasMore: boolean;
   hasFilters?: boolean;
 }) {
-  if (articles.length === 0) {
+  const searchParams = useSearchParams();
+  const [lead] = useState<ArticleWithSource | null>(initialArticles[0] ?? null);
+  const [rest, setRest] = useState<ArticleWithSource[]>(
+    initialArticles.slice(1)
+  );
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [loading, setLoading] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const loadMore = useCallback(async () => {
+    if (loading || !hasMore) return;
+    setLoading(true);
+    try {
+      const nextPage = page + 1;
+      const params = buildArticlesApiParams(
+        new URLSearchParams(searchParams.toString()),
+        nextPage
+      );
+      const res = await fetch(`/api/articles?${params}`);
+      if (!res.ok) return;
+      const data: { articles: ArticleWithSource[]; hasMore: boolean } =
+        await res.json();
+      setRest((prev) => [...prev, ...data.articles.map(normalizeArticle)]);
+      setPage(nextPage);
+      setHasMore(data.hasMore);
+    } finally {
+      setLoading(false);
+    }
+  }, [hasMore, loading, page, searchParams]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMore();
+      },
+      { rootMargin: "300px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore]);
+
+  if (!lead) {
     return (
       <div className="border-y-2 border-foreground px-6 py-16 text-center">
         {hasFilters ? (
@@ -35,8 +95,6 @@ export function ArticleList({
     );
   }
 
-  const [lead, ...rest] = articles;
-
   return (
     <div>
       <ArticleCard article={lead} featured />
@@ -52,6 +110,20 @@ export function ArticleList({
             </div>
           ))}
         </div>
+      ) : null}
+
+      <div ref={sentinelRef} className="h-1" aria-hidden />
+
+      {loading ? (
+        <p className="py-8 text-center text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
+          Fetching more dispatches…
+        </p>
+      ) : null}
+
+      {!hasMore && !loading && page > 1 ? (
+        <p className="py-8 text-center text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
+          End of the edition.
+        </p>
       ) : null}
     </div>
   );

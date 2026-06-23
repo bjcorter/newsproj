@@ -16,8 +16,11 @@ export type ArticleFilters = {
   excludeBiases?: Bias[]; // biases to hide from results
   sort?: ArticleSort; // result ordering
   limit?: number; // max rows
-  page?: number; // reserved for future pagination
+  page?: number; // 1-based page for pagination
 };
+
+/** Articles fetched per page (initial SSR load and each scroll batch). */
+export const ARTICLE_PAGE_SIZE = 20;
 
 export const BIAS_VALUES: Bias[] = ["LEFT", "CENTER", "RIGHT"];
 

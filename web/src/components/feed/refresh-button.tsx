@@ -45,8 +45,10 @@ export function RefreshButton() {
         }
         router.refresh();
         startCooldown(res.cooldownMs);
+        const aiNote =
+          res.aiClassified > 0 ? ` · ${res.aiClassified} AI-tagged` : "";
         setStatus(
-          `Updated ${res.sourcesSucceeded}/${res.sourcesProcessed} sources`
+          `Updated ${res.sourcesSucceeded}/${res.sourcesProcessed} sources${aiNote}`
         );
       } catch {
         setStatus("Update failed — try again");
