@@ -49,11 +49,10 @@ export function ArticleCard({
   );
 
   if (featured) {
-    const featuredKicker = article.isTopStory ? "Top Story!" : kicker;
     return (
       <article className="border-b-2 border-foreground pb-6">
         <p className="text-center text-[0.7rem] font-bold uppercase tracking-[0.3em] text-muted-foreground">
-          {featuredKicker}
+          {kicker}
         </p>
         <h2 className="mx-auto mt-2 max-w-3xl text-center font-heading text-3xl font-bold leading-tight sm:text-5xl">
           <a

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { refreshArticles } from "@/app/actions";
 
@@ -10,7 +9,6 @@ import { refreshArticles } from "@/app/actions";
 const STORAGE_KEY = "ingestCooldownUntil";
 
 export function RefreshButton() {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<string | null>(null);
   const [remainingMs, setRemainingMs] = useState(0);
@@ -43,13 +41,10 @@ export function RefreshButton() {
           setStatus("Just updated — hold on");
           return;
         }
-        router.refresh();
         startCooldown(res.cooldownMs);
-        const aiNote =
-          res.aiClassified > 0 ? ` · ${res.aiClassified} AI-tagged` : "";
-        setStatus(
-          `Updated ${res.sourcesSucceeded}/${res.sourcesProcessed} sources${aiNote}`
-        );
+        // Full reload so ArticleList (client state + infinite scroll) picks up
+        // the newly ingested articles immediately.
+        window.location.reload();
       } catch {
         setStatus("Update failed — try again");
       }
